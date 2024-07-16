@@ -1,25 +1,18 @@
 const { hash, compare } = require("bcryptjs");
 const appError = require("../utils/appError");
+
 const sqliteConnection = require("../database/sqlite");
+const userRepository = require("../repositories/userRepository");
+const userCreateService = require("../services/userCreateService");
 
 class usersController {
-
   async create(request, response) {
     const {name, email, password} = request.body;
 
-    const database = await sqliteConnection()
-    const checkUserExists = await database.get("SELECT * FROM users WHERE email = (?)", [email])
-
-    if(checkUserExists){
-      throw new appError("Este e-mail já está em uso!")
-    }
-
-    const hashedPassword = await hash(password, 8);
-
-    await database.run(
-      "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-      [name, email, hashedPassword]
-    );
+    const UserRepository = new userRepository();
+    const UserCreateService = new userCreateService(UserRepository);
+    
+    await UserCreateService.execute({ name, email, password });
 
     return response.status(201).json()
   }
